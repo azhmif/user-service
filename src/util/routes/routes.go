@@ -8,16 +8,25 @@ import (
 	"strings"
 	"time"
 	"user-service/src/util/config"
-
-	integration "user-service/src/handlers/users/integrations"
+	"user-service/src/util/middleware"
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
+
+	cart "user-service/src/handlers/cart"
+	order "user-service/src/handlers/order"
+	product "user-service/src/handlers/products"
+	user "user-service/src/handlers/users"
+	integration "user-service/src/handlers/users/integrations"
 )
 
 type Routes struct {
 	Router      *mux.Router
 	Integration *integration.Handler
+	User        *user.Handler
+	Product     *product.Handler
+	Cart        *cart.Handler
+	Order       *order.Handler
 }
 
 func EnabledCors(next http.Handler) http.Handler {
@@ -104,6 +113,10 @@ func (r *Routes) SetupRouter() {
 
 	r.SetupBaseURL()
 	r.SetupIntegration()
+	r.SetupUser()
+	r.SetupProduct()
+	r.SetupCart()
+	r.setupOrder()
 }
 
 func (r *Routes) SetupBaseURL() {
@@ -112,8 +125,45 @@ func (r *Routes) SetupBaseURL() {
 		r.Router.PathPrefix(baseURL).HandlerFunc(URLRewriter(r.Router, baseURL))
 	}
 }
+
 func (r *Routes) SetupIntegration() {
 	path := r.Router.PathPrefix("/users").Subrouter()
 	path.HandleFunc("/signup", r.Integration.SignUp).Methods(http.MethodGet, http.MethodOptions)
 	path.HandleFunc("/signup/callback", r.Integration.RedirectSignUp).Methods(http.MethodGet, http.MethodOptions)
+	path.HandleFunc("/signin", r.Integration.SignIn).Methods(http.MethodGet, http.MethodOptions)
+	path.HandleFunc("/signin/callback", r.Integration.RedirectSignIn).Methods(http.MethodGet, http.MethodOptions)
+}
+
+func (r *Routes) SetupUser() {
+	userRoutes := r.Router.PathPrefix("/users").Subrouter()
+	userRoutes.HandleFunc("/signup/email", r.User.SignUpByEmail).Methods(http.MethodPost, http.MethodOptions)
+	userRoutes.HandleFunc("/signin/email", r.User.SignInByEmail).Methods(http.MethodPost, http.MethodOptions)
+
+	authenticatedRoutes := userRoutes.PathPrefix("").Subrouter()
+	authenticatedRoutes.Use(middleware.Authentication)
+	authenticatedRoutes.HandleFunc("", r.User.GetUsers).Methods(http.MethodGet, http.MethodOptions)
+	authenticatedRoutes.HandleFunc("/{user_id}/update", r.User.UpdateProfile).Methods(http.MethodPut, http.MethodOptions)
+}
+
+func (r *Routes) SetupProduct() {
+	productRoutes := r.Router.PathPrefix("/products").Subrouter()
+	productRoutes.Use(middleware.Authentication)
+	productRoutes.HandleFunc("/create", r.Product.CreateShop).Methods(http.MethodPost, http.MethodOptions)
+}
+
+func (r *Routes) SetupCart() {
+	cartRoutes := r.Router.PathPrefix("/cart").Subrouter()
+	cartRoutes.Use(middleware.Authentication)
+	cartRoutes.HandleFunc("/details", r.Cart.GetCartByUserID).Methods(http.MethodGet, http.MethodOptions)
+	cartRoutes.HandleFunc("/update", r.Cart.UpdateCart).Methods(http.MethodPut, http.MethodOptions)
+	cartRoutes.HandleFunc("/add", r.Cart.AddCart).Methods(http.MethodPost, http.MethodOptions)
+	cartRoutes.HandleFunc("/delete", r.Cart.DeleteCart).Methods(http.MethodDelete, http.MethodOptions)
+}
+
+func (r *Routes) setupOrder() {
+	orderRoutes := r.Router.PathPrefix("/order").Subrouter()
+	orderRoutes.Use(middleware.Authentication)
+	orderRoutes.HandleFunc("/create", r.Order.CreateOrder).Methods(http.MethodPost, http.MethodOptions)
+	orderRoutes.HandleFunc("/create/items", r.Order.CreateOrderItems).Methods(http.MethodPost, http.MethodOptions)
+	orderRoutes.HandleFunc("/create/items/logs", r.Order.CreateOrderItemlogs).Methods(http.MethodPost, http.MethodOptions)
 }

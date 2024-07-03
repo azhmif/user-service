@@ -17,12 +17,12 @@ var (
 	SSOSignup *oauth2.Config
 	SSOSignin *oauth2.Config
 
-	ClientIDSignup     = "1046398925079-55m6p5ivhnc6961d61ln8vjctjtnk9t0.apps.googleusercontent.com"
-	ClientSecretSignup = "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"
+	ClientIDSignup     = "2089389193-q3la82qdnhkcdpddmkuhvbb9mctktf7r.apps.googleusercontent.com"
+	ClientSecretSignup = "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"
 	RedirectURLSignup  = "http://localhost:9990/users/signup/callback"
 
-	ClientIDSignin     = "1046398925079-as4gpoto2dp978a4akav5ak0v5pfccg8.apps.googleusercontent.com"
-	ClientSecretSignin = "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"
+	ClientIDSignin     = "2089389193-hh9d0b6iorrlmhtgoqdsh9fe7iopabft.apps.googleusercontent.com"
+	ClientSecretSignin = "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"
 	RedirectURLSignin  = "http://localhost:9990/users/signin/callback"
 )
 
